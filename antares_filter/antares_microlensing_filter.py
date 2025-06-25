@@ -64,17 +64,18 @@ def magerr_to_fluxerr(mag, mag_err, F0=1.0):
     return flux_err
 
 
-class microlensing(dk.Filter):
+class microlensing(dk.Filter):    
     INPUT_LOCUS_PROPERTIES = [
         'ztf_object_id',
     ]
-
+    
     OUTPUT_TAGS = [
         {
             'name': 'microlensing_candidate',
             'description': 'Locus - a transient candidate - exhibits a microlensing-like variability',
         }
     ]
+
 
     def make_lc(self, locus):
 
@@ -88,32 +89,33 @@ class microlensing(dk.Filter):
             df = locus.timeseries.to_pandas()
 
         data = df[['ant_mjd', 'ztf_fid', 'ztf_magpsf', 'ztf_sigmapsf']]
-
+        
         dn = data.dropna()
-        times = dn['ant_mjd'][dn['ztf_fid'] == 1]
-        mags = dn['ztf_magpsf'][dn['ztf_fid'] == 1]
-        mags_err = dn['ztf_sigmapsf'][dn['ztf_fid'] == 1]
+        times=dn['ant_mjd'][dn['ztf_fid']==1]
+        mags = dn['ztf_magpsf'][dn['ztf_fid']==1]
+        mags_err = dn['ztf_sigmapsf'][dn['ztf_fid']==1]
         flxs = mag_to_flux(mags)
         flx_errs = magerr_to_fluxerr(mags, mags_err)
-
+        
         t0_guess = times[np.argmin(mags)]  # Min mag is peak time
-        u0_guess = 1 / (np.max(flxs))
+        u0_guess = 1/(np.max(flxs))
 
-        initial_fit = paczynski(times,
-                                t0_guess,
-                                u0_guess,
-                                20,
-                                0.5)
+        initial_fit  = paczynski(times,
+                                     t0_guess, 
+                                     u0_guess, 
+                                     20, 
+                                     0.5)
 
         # plt.gca().invert_yaxis()
-        plt.scatter(times,
+        plt.scatter(times, 
                     flxs, color='g', label='g_band')
-        plt.plot(times,
+        plt.plot(times, 
                  initial_fit, color='b', label='initial fit')
-
+        
         plt.xlabel('Time (mjd)')
         plt.ylabel('Flux')
         plt.legend()
+
 
     def is_microlensing_candidate(self, times, mags, errors):
         """
@@ -122,15 +124,23 @@ class microlensing(dk.Filter):
         if len(times) < 10:  # Too few data points
             return False
 
+        # TODO - Rache add variability flag if relevant - maybe based on historical
+        # i.e. check his
+
         # Sort data by time
         sorted_idx = np.argsort(times)
         times, mags, errors = times[sorted_idx], mags[sorted_idx], errors[sorted_idx]
 
         # 1. Check for smoothness (low skewness means symmetric light curve)
+        # TODO: Check for threshold with parallax and maybe remove or lower threshold
         if abs(skew(mags)) > 1:
             return False
 
+        # TODO - Natasha Add von Neumann parameter
+
         # 2. Check variability (microlensing should have a clear peak)
+        # Decrease threshold with longer baseline
+        # Q for broker - 365 days or full lightcurve?
         if np.ptp(mags) < 0.5:  # Peak-to-peak magnitude difference
             return False
 
@@ -138,11 +148,12 @@ class microlensing(dk.Filter):
         flx_errs = magerr_to_fluxerr(mags, errors)
 
         # 3. Perform a lightweight template fit (Paczyński model)
+        # TODO - Somayeh switch to KMTNet algorithm
         t0_guess = times[np.argmin(mags)]  # Min mag is peak time
-        u0_guess = 1 / (np.max(flxs))
-        initial_guess = [t0_guess,
-                         u0_guess,
-                         20,
+        u0_guess = 1/(np.max(flxs))
+        initial_guess = [t0_guess, 
+                         u0_guess, 
+                         20, 
                          0.5]  # Initial params
 
         # try:
@@ -155,8 +166,13 @@ class microlensing(dk.Filter):
         # except RuntimeError:
         #     return False  # Fit failed
 
-        return False
+        # TODO - Natasha add von Neumann residual (subtract out microlensing and see if you're still correlated)
 
+        # TODO - Rache potentially query full lightcurve if not already there and if possible
+
+        # TODO - Natasha add parallax microlensing fit
+
+        return False
     def run(self, locus):
         print('Processing Locus:', locus.locus_id)
 
@@ -166,14 +182,16 @@ class microlensing(dk.Filter):
 
         data = df[['ant_mjd', 'ztf_fid', 'ztf_magpsf', 'ztf_sigmapsf']].dropna()
 
+        
+        
         # Split into g-band and i-band
         for band in [1, 2]:  # 1 = g-band, 2 = i-band
             band_data = data[data['ztf_fid'] == band]
-            times, mags, errors = band_data['ant_mjd'].values, band_data['ztf_magpsf'].values, band_data[
-                'ztf_sigmapsf'].values
-
+            times, mags, errors = band_data['ant_mjd'].values, band_data['ztf_magpsf'].values, band_data['ztf_sigmapsf'].values
+            
             if self.is_microlensing_candidate(times, mags, errors):
                 print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
                 locus.tag('microlensing_candidate')
-
+        
+        
         return
