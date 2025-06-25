@@ -68,7 +68,9 @@ class microlensing(dk.Filter):
     INPUT_LOCUS_PROPERTIES = [
         'ztf_object_id',
     ]
-    
+
+    REQUIRED_TAGS = ['lc_feature_extractor']
+
     OUTPUT_TAGS = [
         {
             'name': 'microlensing_candidate',
@@ -117,15 +119,23 @@ class microlensing(dk.Filter):
         plt.legend()
 
 
-    def is_microlensing_candidate(self, times, mags, errors):
+    def is_microlensing_candidate(self, locus, times, mags, errors):
         """
         Example of a set of Microlensing detection criteria
         """
         if len(times) < 10:  # Too few data points
             return False
 
-        # TODO - Rache add variability flag if relevant - maybe based on historical
-        # i.e. check his
+        # Use the pre-calculated properties of the locus to eliminate those
+        # which show signs of variability, either in their periodicity signature or
+        # the Stetson-K index
+        locus_params = locus.to_dict()
+        period_peak_sn_threshold = 20.0
+        stetson_k_threshold = 2.0
+        if locus_params['properties']['feature_period_s_to_n_0_magn_r'] >= period_peak_sn_threshold:
+            return False
+        if locus_params['properties']['feature_stetson_k_magn_r'] >= stetson_k_threshold:
+            return False
 
         # Sort data by time
         sorted_idx = np.argsort(times)
@@ -189,7 +199,7 @@ class microlensing(dk.Filter):
             band_data = data[data['ztf_fid'] == band]
             times, mags, errors = band_data['ant_mjd'].values, band_data['ztf_magpsf'].values, band_data['ztf_sigmapsf'].values
             
-            if self.is_microlensing_candidate(times, mags, errors):
+            if self.is_microlensing_candidate(locus, times, mags, errors):
                 print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
                 locus.tag('microlensing_candidate')
         
