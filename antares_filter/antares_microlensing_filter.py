@@ -135,8 +135,8 @@ class microlensing(dk.Filter):
 
         # Tunable detection thresholds.
         # Ref: Sokolovsky et al. 2016: https://ui.adsabs.harvard.edu/abs/2017MNRAS.464..274S/abstract
-        period_peak_sn_threshold = 20.0
-        stetson_k_threshold = 0.8
+        period_peak_sn_threshold = 20.0  # Based on tests with ZTF alerts
+        stetson_k_threshold = 0.8  # The expected K-value for a constant lightcurve with Gaussian noise
 
         # Check for periodicity
         if locus_params['properties']['feature_period_s_to_n_0_magn_r'] >= period_peak_sn_threshold:
