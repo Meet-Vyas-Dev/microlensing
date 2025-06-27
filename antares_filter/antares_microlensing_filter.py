@@ -118,6 +118,44 @@ class microlensing(dk.Filter):
         plt.ylabel('Flux')
         plt.legend()
 
+    def is_known_other_phenomenon(self, locus):
+        """
+        Method to check the locus' pre-existing parameters indicated that it has
+        been identified or is likely to be a variable of a type other than microlensing
+
+        :param locus:
+        :return: boolean
+        """
+
+        # Default result is not a known variable
+        known_var = False
+
+        # Extract the full parameter set from the locus and the alert
+        locus_params = locus.to_dict()
+
+        # Tunable detection thresholds.
+        # Ref: Sokolovsky et al. 2016: https://ui.adsabs.harvard.edu/abs/2017MNRAS.464..274S/abstract
+        period_peak_sn_threshold = 20.0
+        stetson_k_threshold = 0.8
+
+        # Check for periodicity
+        if locus_params['properties']['feature_period_s_to_n_0_magn_r'] >= period_peak_sn_threshold:
+            known_var = True
+
+        # Check Stetson-K index
+        if locus_params['properties']['feature_stetson_k_magn_r'] <= stetson_k_threshold:
+            known_var = True
+
+        # Check whether this event is associated with a GW event
+        if 'plausible_gw_events_assoc' in locus.alert.properties.keys():
+            known_var = True
+
+        # If the alert has parameters from JPL Horizons, then it is likely cause by
+        # a Solar System object
+        if 'horizons_targetname' in locus_params['properties'].keys():
+            known_var = True
+
+        return known_var
 
     def is_microlensing_candidate(self, locus, times, mags, errors):
         """
@@ -127,14 +165,10 @@ class microlensing(dk.Filter):
             return False
 
         # Use the pre-calculated properties of the locus to eliminate those
-        # which show signs of variability, either in their periodicity signature or
+        # which show signs of variability, e.g. in their periodicity signature or
         # the Stetson-K index
-        locus_params = locus.to_dict()
-        period_peak_sn_threshold = 20.0
-        stetson_k_threshold = 2.0
-        if locus_params['properties']['feature_period_s_to_n_0_magn_r'] >= period_peak_sn_threshold:
-            return False
-        if locus_params['properties']['feature_stetson_k_magn_r'] >= stetson_k_threshold:
+        known_var = self.is_known_other_phenomenon(locus)
+        if known_var:
             return False
 
         # Sort data by time
