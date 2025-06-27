@@ -146,7 +146,20 @@ class microlensing(dk.Filter):
         if abs(skew(mags)) > 1:
             return False
 
-        # TODO - Natasha Add von Neumann parameter
+        # TODO is 6 months and a year - calculate this based on percentile of real data
+        eta_thresh = 1.255 # Avg from ZTF level 2 (low eta)
+        # Do check for existance since if there's only one band of data, only one will exist
+        eta_r_exists = 'feature_eta_e_magn_r' in locus_params['properties'].keys()
+        eta_g_exists = 'feature_eta_e_magn_g' in locus_params['properties'].keys()
+        if eta_r_exists and eta_g_exists:
+            if locus_params['properties']['feature_eta_e_magn_r'] >= eta_thresh and locus_params['properties']['feature_eta_e_magn_g'] >= eta_thresh:
+                return False
+        elif eta_r_exists:
+            if locus_params['properties']['feature_eta_e_magn_r'] >= eta_thresh:
+                return False
+        elif eta_g_exists:
+            if locus_params['properties']['feature_eta_e_magn_g'] >= eta_thresh:
+                return False
 
         # 2. Check variability (microlensing should have a clear peak)
         # Decrease threshold with longer baseline
