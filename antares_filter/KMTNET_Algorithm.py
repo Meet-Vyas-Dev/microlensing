@@ -2,7 +2,6 @@
 # Authors: Atousa Kalantari, Somayeh Khakpash
 
 """
-
 Implementation of the two parameter PSPL fitting procedure from Kim et al. (2018)
 (https://iopscience.iop.org/article/10.3847/1538-3881/aaa47b).
 
@@ -43,7 +42,6 @@ Empirically, if delta_chi_squared_kmt > 0.9, we consider the event a microlensin
 
 The chosen metric threshold (>0.9), window size (Z = 7) and at least 10 datapoints, step size (delta = 1/3), and teff range ([1, 100]) are based on Rubin cadence and observed days.
 ***These values must be checked and validated to ensure they are optimal.***
-
 """
 
 
@@ -205,7 +203,7 @@ def run_kmtnet_fit(times, fluxes, flux_errors):
     f0 = parameter[4]
 
     # --- Linear Fit for Flat Model ---
-    # Fit a constant flux to the light curve in the same window for reference
+    # Fit a constant flux to the light curve in the same window
     data_df_interval = data_df[(data_df['time'] > (t0 - 7 * t_eff)) & (data_df['time'] < (t0 + 7 * t_eff))]
 
     if len(data_df_interval) == 0:
