@@ -45,12 +45,14 @@ The chosen metric threshold (>0.9), window size (Z = 7) and at least 10 datapoin
 """
 
 
-
+# imports
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
 import warnings
 import weightedstats as ws
+
+
 
 def run_kmtnet_fit(times, fluxes, flux_errors):
 
@@ -232,6 +234,3 @@ def run_kmtnet_fit(times, fluxes, flux_errors):
     # Return: delta chi2, best-fit physical params
     # If delta_chi_squared_kmt > 0.9, the light curve would be a microlensing candidate.
     return delta_chi_squared_kmt, (t0, t_eff, f1, f0)
-
-
-
