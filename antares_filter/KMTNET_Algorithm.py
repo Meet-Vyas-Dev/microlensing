@@ -81,7 +81,6 @@ def run_kmtnet_fit(times, fluxes, flux_errors):
     # --- Model Definitions ---
     # Functions for high and low magnification regimes,
     # params: (t, f_1, f_0, t0, t_eff)
-
     def Ft_high(t, f_1, f_0, t0, t_eff):
         # High-mag analytic approximation 
         Q = 1 + ((t - t0) / t_eff)**2
