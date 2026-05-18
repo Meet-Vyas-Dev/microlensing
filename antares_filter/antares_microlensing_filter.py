@@ -18,6 +18,8 @@ class microlensing(BaseFilter):
 
     REQUIRED_TAGS = ['lc_feature_extractor']
 
+    SLACK_CHANNEL = "#filter-microlensing"
+
     OUTPUT_TAGS = [
         {
             'name': 'microlensing_candidate',
@@ -276,26 +278,19 @@ class microlensing(BaseFilter):
         period_peak_sn_threshold = 20.0  # Based on tests with ZTF alerts
         stetson_k_threshold = 0.8  # The expected K-value for a constant lightcurve with Gaussian noise
 
-        # Check for periodicity
-        feature_period_s_to_n_0_magn_r_exists = 'feature_period_s_to_n_0_magn_r' in locus_params.keys()
-        if feature_period_s_to_n_0_magn_r_exists:
-            if locus_params['feature_period_s_to_n_0_magn_r'] >= period_peak_sn_threshold:
-                known_var = True
-        feature_period_s_to_n_0_magn_g_exists = 'feature_period_s_to_n_0_magn_g' in locus_params.keys()
-        if feature_period_s_to_n_0_magn_g_exists:
-            if locus_params['feature_period_s_to_n_0_magn_g'] >= period_peak_sn_threshold:
-                known_var = True
+        for band in self.band_list:
+            # Check for periodicity
+            feature_period_s_to_n_0_magn_exists = 'feature_period_s_to_n_0_magn_' + band in locus_params.keys()
+            if feature_period_s_to_n_0_magn_exists:
+                if locus_params['feature_period_s_to_n_0_magn_' + band] >= period_peak_sn_threshold:
+                    known_var = True
 
-        # Check Stetson-K index
-        feature_stetson_k_magn_r_exists = 'feature_stetson_k_magn_r' in locus_params.keys()
-        if feature_stetson_k_magn_r_exists:
-            if locus_params['feature_stetson_k_magn_r'] <= stetson_k_threshold:
-                known_var = True
-        feature_stetson_k_magn_g_exists = 'feature_stetson_k_magn_g' in locus_params.keys()
-        if feature_stetson_k_magn_g_exists:
-            if locus_params['feature_stetson_k_magn_g'] <= stetson_k_threshold:
-                known_var = True
-
+            # Check Stetson-K index
+            feature_stetson_k_magn_exists = 'feature_stetson_k_magn_' + band in locus_params.keys()
+            if feature_stetson_k_magn_exists:
+                if locus_params['feature_stetson_k_magn_' + band] <= stetson_k_threshold:
+                    known_var = True
+        
         # If the alert has parameters from JPL Horizons, then it is likely cause by
         # a Solar System object
         if 'horizons_targetname' in locus_params.keys():
@@ -368,15 +363,6 @@ class microlensing(BaseFilter):
         # Extract the full parameter set from the locus and the alert
         locus_params = locus.properties
 
-        # Use the pre-calculated properties of the locus to eliminate those
-        # which show signs of variability, e.g. in their periodicity signature or
-        # the Stetson-K index
-        known_var = self.is_known_other_phenomenon(locus, locus_params)
-        if known_var:
-            if verbose == True:
-                print('Other known phenomenon')
-            return False
-
         # Sort data by time
         sorted_idx = self.np.argsort(times)
         times, mags, errors = times[sorted_idx], mags[sorted_idx], errors[sorted_idx]
@@ -394,27 +380,17 @@ class microlensing(BaseFilter):
         # TODO is 6 months and a year - calculate this based on percentile of real data
         eta_thresh = 1.255  # Avg from ZTF level 2 (low eta)
         # Do check for existance since if there's only one band of data, only one will exist
-        eta_r_exists = 'feature_eta_e_magn_r' in locus_params.keys()
-        eta_g_exists = 'feature_eta_e_magn_g' in locus_params.keys()
-        if eta_r_exists:
-            eta_r = locus_params['feature_eta_e_magn_r']
-        if eta_g_exists:
-            eta_g = locus_params['feature_eta_e_magn_g']
-        if eta_r_exists and eta_g_exists:
-            if eta_r >= eta_thresh and eta_g >= eta_thresh:
-                if verbose == True:
-                    print('Failed von Neumann threshold')
-                return False
-        elif eta_r_exists:
-            if eta_r >= eta_thresh:
-                if verbose == True:
-                    print('Failed von Neumann threshold')
-                return False
-        elif eta_g_exists:
-            if eta_g >= eta_thresh:
-                if verbose == True:
-                    print('Failed von Neumann threshold')
-                return False
+        etas = self.np.zeros(len(self.band_list))
+        for i, band in enumerate(self.band_list):
+            eta_exists = 'feature_eta_e_magn_' + band in locus_params.keys()
+            if eta_exists:
+                eta = locus_params['feature_eta_e_magn_' + band]
+                etas[i] = eta
+            if eta_exists:
+                if eta >= eta_thresh:
+                    if verbose == True:
+                        print('Failed von Neumann threshold')
+                    return False
 
 
         # 2. Check variability (microlensing should have a clear peak)
@@ -446,22 +422,12 @@ class microlensing(BaseFilter):
         # 5. Check that the residual isn't correlated in all avaliable bands
         eta_resid = self.calculate_eta(resid)
         eta_slope, eta_offset = self.return_eta_residual_slope_offset()
-        if eta_r_exists and eta_g_exists:
-            if (eta_resid < eta_r * eta_slope + eta_offset) and (eta_resid < eta_g * eta_slope + eta_offset):
-                if verbose == True:
-                    print('Failed eta residual threshold')
-                return False
-        elif eta_r_exists:
-            if (eta_resid < eta_r * eta_slope + eta_offset):
-                if verbose == True:
-                    print('Failed eta residual threshold')
-                return False
-        elif eta_g_exists:
-            if (eta_resid < eta_g * eta_slope + eta_offset):
-                if verbose == True:
-                    print('Failed eta residual threshold')
-                return False
-
+        for i, band in enumerate(self.band_list):
+            if etas[i] != 0:
+                if eta_resid < eta * eta_slope + eta_offset:
+                    if verbose == True:
+                        print('Failed eta residual threshold')
+                    return False
         
         # outbase = 'microlens_fit_'
         # data = self.make_bagle_data_dir(times, mags, errors)
@@ -506,19 +472,31 @@ class microlensing(BaseFilter):
         locus.set_property('feature_microlensing_simple_{}_Fs'.format(band), popt[3])
         locus.set_property('feature_microlensing_simple_{}_chi2'.format(band), chi2_val)
 
+        microlensing_filter_path = self.os.path.dirname(self.inspect.getfile(microlensing))
+        microlensing_filter_hash = self.subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                             cwd=microlensing_filter_path).decode('ascii').strip()
+        locus.set_property('feature_microlensing_filter_hash', microlensing_filter_hash)
+
         return True
 
-    def _run(self, locus):
+    def _run(self, locus, verbose=False):
         import numpy as np
         import astropy
         from scipy.optimize import curve_fit
         from scipy.stats import skew
         from astropy.stats import sigma_clip
+        import os
+        import inspect
+        import subprocess
+        
 
         self.np = np
         self.curve_fit = curve_fit
         self.skew = skew
         self.sigma_clip = sigma_clip
+        self.os = os
+        self.inspect = inspect
+        self.subprocess = subprocess
 
         
         print('Processing Locus:', locus.locus_id)
@@ -533,15 +511,31 @@ class microlensing(BaseFilter):
             df = locus.timeseries().to_pandas()
 
         data = df[['ant_mjd', 'ant_passband', 'ant_mag', 'ant_magerr']].dropna()
+        
+        band_list = self.np.unique(data['ant_passband'])
+        self.band_list = band_list
 
-        # Split into g-band and i-band
-        band_list = np.unique(data['ant_passband'])
-        for band in band_list:  # 1 = g-band, 2 = i-band
-            print(band)
-            band_data = data[data['ant_passband'] == band]
-            times, mags, errors = band_data['ant_mjd'].values, band_data['ant_mag'].values, band_data[
-                'ant_magerr'].values
+        # Temporarily adding lower case r to band list to be tested on lc_feature_extractor
+        # since currently they use lower case r for ztf R, but they're switching to upper case r
+        # When filter gets updated, this can be removed (only makes it very marginally less efficient)
+        if 'R' in band_list and 'r' not in band_list:
+            self.band_list = self.np.append(self.band_list, 'r')
 
-            if self.is_microlensing_candidate(locus, times, mags, errors, band, verbose=False):
-                print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
-                locus.tag('microlensing_candidate')
+        # Use the pre-calculated properties of the locus to eliminate those
+        # which show signs of variability, e.g. in their periodicity signature or
+        # the Stetson-K index
+        known_var = self.is_known_other_phenomenon(locus, locus.properties)
+        if known_var:
+            if verbose == True:
+                print('Other known phenomenon')
+            self.is_microlensing_candidate = False
+        else:
+            # Loops over bands
+            for band in band_list:
+                print(band)
+                band_data = data[data['ant_passband'] == band]
+                times, mags, errors = band_data['ant_mjd'].values, band_data['ant_mag'].values, band_data['ant_magerr'].values
+        
+                if self.is_microlensing_candidate(locus, times, mags, errors, band, verbose=verbose):
+                    print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
+                    locus.tag('microlensing_candidate')
