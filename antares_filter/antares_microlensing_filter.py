@@ -9,6 +9,7 @@ import warnings
 from antares_devkit.models import BaseFilter
 #from bagle import model, model_fitter
 import math
+from importlib.metadata import version
 
 
 class microlensing(BaseFilter):
@@ -472,10 +473,8 @@ class microlensing(BaseFilter):
         locus.set_property('feature_microlensing_simple_{}_Fs'.format(band), popt[3])
         locus.set_property('feature_microlensing_simple_{}_chi2'.format(band), chi2_val)
 
-        microlensing_filter_path = self.os.path.dirname(self.inspect.getfile(microlensing))
-        microlensing_filter_hash = self.subprocess.check_output(['git', 'rev-parse', 'HEAD'],
-                                             cwd=microlensing_filter_path).decode('ascii').strip()
-        locus.set_property('feature_microlensing_filter_hash', microlensing_filter_hash)
+        dk_version = version('antares_devkit')
+        locus.set_property('feature_antares_devkit_version', dk_version)
 
         return True
 
@@ -485,18 +484,12 @@ class microlensing(BaseFilter):
         from scipy.optimize import curve_fit
         from scipy.stats import skew
         from astropy.stats import sigma_clip
-        import os
-        import inspect
-        import subprocess
         
 
         self.np = np
         self.curve_fit = curve_fit
         self.skew = skew
         self.sigma_clip = sigma_clip
-        self.os = os
-        self.inspect = inspect
-        self.subprocess = subprocess
 
         
         print('Processing Locus:', locus.locus_id)
