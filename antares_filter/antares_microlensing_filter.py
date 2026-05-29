@@ -355,6 +355,11 @@ class microlensing(BaseFilter):
         """
         Example of a set of Microlensing detection criteria
         """
+        if self.known_var:
+            if verbose == True:
+                print('Known variable')
+            return False
+            
         if len(times) < 10:  # Too few data points
             if verbose == True:
                 print('Too Few Datapoints')
@@ -501,7 +506,7 @@ class microlensing(BaseFilter):
             # number of noisy warning so we will catch & ignore them for the
             # next couple of lines.
             warnings.simplefilter("ignore", astropy.table.TableReplaceWarning)
-            df = locus.timeseries().to_pandas()
+            df = locus.timeseries(self.TRIGGERING_SURVEY).to_pandas()
 
         data = df[['ant_mjd', 'ant_passband', 'ant_mag', 'ant_magerr']].dropna()
         
@@ -518,17 +523,14 @@ class microlensing(BaseFilter):
         # which show signs of variability, e.g. in their periodicity signature or
         # the Stetson-K index
         known_var = self.is_known_other_phenomenon(locus, locus.properties)
-        if known_var:
-            if verbose == True:
-                print('Other known phenomenon')
-            self.is_microlensing_candidate = False
-        else:
-            # Loops over bands
-            for band in band_list:
-                print(band)
-                band_data = data[data['ant_passband'] == band]
-                times, mags, errors = band_data['ant_mjd'].values, band_data['ant_mag'].values, band_data['ant_magerr'].values
-        
-                if self.is_microlensing_candidate(locus, times, mags, errors, band, verbose=verbose):
-                    print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
-                    locus.tag('microlensing_candidate')
+        self.known_var = known_var
+
+        # Loops over bands
+        for band in band_list:
+            band_data = data[data['ant_passband'] == band]
+            times, mags, errors = band_data['ant_mjd'].values, band_data['ant_mag'].values, band_data[
+                'ant_magerr'].values
+
+            if self.is_microlensing_candidate(locus, times, mags, errors, band, verbose=verbose):
+                print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
+                locus.tag('microlensing_candidate')
