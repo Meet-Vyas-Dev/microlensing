@@ -351,7 +351,7 @@ class microlensing(BaseFilter):
 
         return data
 
-    def is_microlensing_candidate(self, locus, times, mags, errors, band, verbose):
+    def is_microlensing_candidate(self, locus, times, mags, errors, verbose):
         """
         Example of a set of Microlensing detection criteria
         """
@@ -531,6 +531,6 @@ class microlensing(BaseFilter):
             times, mags, errors = band_data['ant_mjd'].values, band_data['ant_mag'].values, band_data[
                 'ant_magerr'].values
 
-            if self.is_microlensing_candidate(locus, times, mags, errors, band, verbose=verbose):
+            if self.is_microlensing_candidate(locus, times, mags, errors, verbose=verbose):
                 print(f'Locus {locus.locus_id} is a microlensing candidate in band {band}')
                 locus.tag('microlensing_candidate')
