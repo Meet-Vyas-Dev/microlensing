@@ -1,0 +1,129 @@
+name: Microlensing Sprint Project Proposal
+description: Propose a new project or work package for the Microlensing Sprint.
+title: "[Project]: "
+labels:
+  - sprint
+  - microlensing
+body:
+  - type: input
+    id: project_title
+    attributes:
+      label: Project Title
+      description: Give your project a short descriptive title.
+      placeholder: ANTARES Filter Development for Rubin Microlensing Alerts
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Project Category
+      options:
+        - Broker Development
+        - Classification
+        - Simulation
+        - NPE/Inference
+        - TOM Integration
+        - Detection Efficiency
+        - Anomaly Detection
+        - Documentation
+        - Observing Strategy/OpSim
+        - Science Analysis
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: scientific_motivation
+    attributes:
+      label: Scientific Motivation
+      description: Why is this project important for Rubin LSST microlensing science?
+      placeholder: |
+        Example:
+        Develop an ANTARES filter capable of identifying microlensing events
+        in Rubin alert streams and compare performance with ALeRCE and OPM.
+
+    validations:
+      required: true
+
+  - type: textarea
+    id: objectives
+    attributes:
+      label: Objectives
+      description: List the main goals.
+      placeholder: |
+        - Integrate ANTARES with Rubin alert streams
+        - Cross-match with OGLE disk events
+        - Benchmark performance against ALeRCE
+        - Document deployment procedure
+    validations:
+      required: true
+
+  - type: textarea
+    id: deliverables
+    attributes:
+      label: Deliverables
+      description: Expected outputs.
+      placeholder: |
+        - Python package/module
+        - Documentation notebook
+        - Performance plots
+        - TOM integration
+        - Conference presentation
+
+  - type: textarea
+    id: methodology
+    attributes:
+      label: Proposed Methodology
+      description: Briefly describe the approach.
+      placeholder: |
+        Describe simulations, broker APIs, classifiers,
+        training data, metrics, etc.
+
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: External software, data products, collaborations, or APIs required.
+      placeholder: |
+        - RubinSim
+        - ANTARES API
+        - ALeRCE API
+        - OPM/TOM
+        - OGLE event catalogues
+
+  - type: textarea
+    id: milestones
+    attributes:
+      label: Milestones
+      placeholder: |
+        [ ] Literature review
+        [ ] Data acquisition
+        [ ] Prototype implementation
+        [ ] Validation
+        [ ] Integration
+        [ ] Documentation
+
+  - type: input
+    id: leads
+    attributes:
+      label: Project Leads
+      placeholder: "@username"
+
+  - type: textarea
+    id: collaborators
+    attributes:
+      label: Collaborators
+      placeholder: |
+        @username1
+        @username2
+
+  - type: textarea
+    id: success_metrics
+    attributes:
+      label: Success Metrics
+      description: How will success be measured?
+      placeholder: |
+        - Detection efficiency > 90%
+        - False positive rate < 5%
+        - Runtime < 1 second/event
